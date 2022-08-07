@@ -4,7 +4,7 @@ from .models import Post, Group, Comment
 
 
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'text', 'author', 'group')
+    list_display = ('pk', 'text', 'author', 'pub_date', 'group')
     search_fields = ('text',)
     list_filter = ('pub_date',)
     empty_value_display = '-пусто-'

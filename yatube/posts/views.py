@@ -100,12 +100,15 @@ def add_comment(request, post_id):
 
 
 def follow_index(request):
-    follow_posts = Post.objects.filter(author__following__user=request.user)
-    page_obj = page_paginator(follow_posts, request)
-    context = {
-        'page_obj': page_obj
-    }
-    return render(request, 'posts/follow.html', context)
+    if request.user.is_authenticated:
+        follow_posts =  Post.objects.filter(author__following__user=request.user
+        )
+        page_obj = page_paginator(follow_posts, request)
+        context = {
+            'page_obj': page_obj
+        }
+        return render(request, 'posts/follow.html', context)
+    return redirect('users:login')
 
 
 @login_required
