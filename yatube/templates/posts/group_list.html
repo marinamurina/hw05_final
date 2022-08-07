@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}
+  'Записи сообщества {{ group.title }}'
+{% endblock title %}
+{% block content %}
+  <h1>{{ group.title }}</h1>
+  <p>{{ group.description }}</p>
+  {% for post in page_obj %}
+    {% include 'includes/article.html' %}
+    <a href="{% url 'posts:post_detail' post.id %}">подробная информация</a>
+    <p>
+    {% if post.group %}
+      <a href="{% url 'posts:group_posts' post.group.slug %}">все записи группы</a>
+    {% endif %}
+    {% if not foorloop.last %}<hr>{% endif %}
+  {% endfor %}
+  {% include 'posts/includes/paginator.html' %}
+{% endblock content %}
