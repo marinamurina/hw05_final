@@ -101,6 +101,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 VIEW_POST_NUMBER = 10
 FIRST_SYMBOLS_NUMBER = 15
+CACHE_NUMBER = 20
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'

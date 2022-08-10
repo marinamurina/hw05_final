@@ -10,8 +10,7 @@ fake = Faker()
 
 class PostModelTest(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username='post_author')
         cls.group = Group.objects.create(
             title=fake.text(),

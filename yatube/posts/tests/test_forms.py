@@ -19,9 +19,9 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
+    
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username='post_author')
         cls.group = Group.objects.create(
             title=fake.text(),
@@ -49,6 +49,7 @@ class PostCreateFormTests(TestCase):
         )
 
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         cache.clear()
@@ -86,24 +87,26 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertRedirects(response, reverse(
-            'posts:profile', args=[PostCreateFormTests.user.username],
+            'posts:profile', args=(PostCreateFormTests.user.username,),
         ))
         new_post = Post.objects.first()
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertEqual(new_post.text, form_data['text'])
         self.assertEqual(new_post.author, PostCreateFormTests.user)
         self.assertEqual(new_post.group, PostCreateFormTests.group)
+        self.assertNotEqual(new_post.image, False)
         self.assertEqual(new_post.image, 'posts/small_2.gif')
 
     def test_create_post_not_by_author(self):
         """Неавторизованный пользователь не может создать новый пост
         и переадресовывается на страницу логина."""
-        self.guest_client = Client()
+        posts_count = Post.objects.count()
         response = self.guest_client.post(
             reverse('posts:post_create'), follow=True)
         redirect_address = reverse(
             'users:login') + '?next=' + reverse('posts:post_create')
         self.assertRedirects(response, redirect_address)
+        self.assertEqual(Post.objects.count(), posts_count)
 
     def test_edit_post_by_author(self):
         """При редактировании поста автором происходит
@@ -126,10 +129,10 @@ class PostCreateFormTests(TestCase):
         }
         response = self.authorized_client.post(
             reverse(
-                'posts:post_edit', args=[
-                    test_post.id]), data=edit_data, follow=True
+                'posts:post_edit', args=(
+                    test_post.id,)), data=edit_data, follow=True
         )
-        redirect_address = reverse('posts:post_detail', args=[test_post.id])
+        redirect_address = reverse('posts:post_detail', args=(test_post.id,))
         self.assertRedirects(response, redirect_address)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Post.objects.count(), post_count)
@@ -161,23 +164,48 @@ class PostCreateFormTests(TestCase):
                 'posts:post_edit', args=[
                     test_post.id]), data=edit_data, follow=True
         )
-        redirect_address = reverse('posts:post_detail', args=[test_post.id])
+        redirect_address = reverse('posts:post_detail', args=(test_post.id,))
+        self.assertIsNot(test_post.text, edit_data.get('text'))
         self.assertRedirects(response, redirect_address)
 
     def test_add_comment(self):
-        """Добавление комментария авторизованным пользователем"""
+        """Добавление комментария авторизованным пользователем."""
         comments_count = Comment.objects.count()
         comment_data = {
             'text': fake.text(),
         }
         response = self.authorized_client.post(
             reverse(
-                'posts:add_comment', args=[
-                    PostCreateFormTests.post.id]
+                'posts:add_comment', args=(
+                    PostCreateFormTests.post.id,)
             ), data=comment_data, follow=True
         )
         redirect_address = reverse(
-            'posts:post_detail', args=[PostCreateFormTests.post.id]
+            'posts:post_detail', args=(PostCreateFormTests.post.id,)
         )
         self.assertRedirects(response, redirect_address)
-        self.assertEqual(Post.objects.count(), comments_count + 1)
+        self.assertEqual(Comment.objects.count(), comments_count + 1)
+        last_comment = response.context['comments'][0]
+        self.assertEqual(last_comment.text, comment_data.get('text'))
+        self.assertEqual(last_comment.post.id, PostCreateFormTests.post.id)
+        self.assertEqual(last_comment.author, PostCreateFormTests.user)
+    
+    def test_add_comment(self):
+        """Неавторизованный пользователь не может создать комментарий,
+        происходит редирект на страницу авторизации."""
+        comments_count = Comment.objects.count()
+        comment_data = {
+            'text': fake.text(),
+        }
+        response = self.guest_client.post(
+            reverse(
+                'posts:add_comment', args=(
+                    PostCreateFormTests.post.id,)
+            ), data=comment_data, follow=True
+        )
+        redirect_address = reverse(
+            'users:login') + '?next=' + reverse(
+                'posts:add_comment', args=(PostCreateFormTests.post.id,)
+        )
+        self.assertRedirects(response, redirect_address)
+        self.assertEqual(Comment.objects.count(), comments_count)

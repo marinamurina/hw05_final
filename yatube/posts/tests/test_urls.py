@@ -11,19 +11,9 @@ User = get_user_model()
 fake = Faker()
 
 
-class StaticURLTests(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-
-    def test_homepage(self):
-        response = self.guest_client.get(reverse('posts:index'))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-
 class PostsURLTests(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username='post_author')
         cls.user2 = User.objects.create_user(username='another_user')
         cls.group = Group.objects.create(
@@ -49,9 +39,9 @@ class PostsURLTests(TestCase):
         """Доступность публичных страниц любому пользователю."""
         templates_public_urls = [
             reverse('posts:index'),
-            reverse('posts:group_posts', args=[PostsURLTests.group.slug]),
-            reverse('posts:profile', args=[PostsURLTests.user.username]),
-            reverse('posts:post_detail', args=[PostsURLTests.post.id])
+            reverse('posts:group_posts', args=(PostsURLTests.group.slug,)),
+            reverse('posts:profile', args=(PostsURLTests.user.username,)),
+            reverse('posts:post_detail', args=(PostsURLTests.post.id,))
         ]
         for address in templates_public_urls:
             with self.subTest(address=address):
@@ -62,7 +52,7 @@ class PostsURLTests(TestCase):
         """Доступность приватных страниц автору."""
         self.authorized_client.force_login(PostsURLTests.user)
         templates_private_urls = [
-            reverse('posts:post_edit', args=[PostsURLTests.post.id]),
+            reverse('posts:post_edit', args=(PostsURLTests.post.id,)),
             reverse('posts:post_create'),
         ]
         for address in templates_private_urls:
@@ -76,11 +66,11 @@ class PostsURLTests(TestCase):
         self.authorized_client.force_login(PostsURLTests.user2)
         response = self.authorized_client.get(
             reverse(
-                'posts:post_edit', args=[
-                    PostsURLTests.post.id]), follow=True
+                'posts:post_edit', args=(
+                    PostsURLTests.post.id,)), follow=True
         )
         redirect_address = reverse(
-            'posts:post_detail', args=[PostsURLTests.post.id]
+            'posts:post_detail', args=(PostsURLTests.post.id,)
         )
         self.assertRedirects(response, redirect_address)
 
@@ -89,8 +79,8 @@ class PostsURLTests(TestCase):
          ведут на редиректную страницу"""
         templates_private_urls = {
             reverse(
-                'posts:post_edit', args=[PostsURLTests.post.id]
-            ): reverse('posts:post_detail', args={PostsURLTests.post.id}),
+                'posts:post_edit', args=(PostsURLTests.post.id,)
+            ): reverse('posts:post_detail', args=(PostsURLTests.post.id,)),
             reverse(
                 'posts:post_create'): reverse(
                     'users:login') + '?next=' + reverse('posts:post_create')
@@ -102,10 +92,10 @@ class PostsURLTests(TestCase):
 
     def test_comments(self):
         "Неавторизованный пользователь не может добавить комментарий."
-        address = reverse('posts:add_comment', args=[PostsURLTests.post.id])
+        address = reverse('posts:add_comment', args=(PostsURLTests.post.id,))
         redirect_address = reverse(
             'users:login') + '?next=' + reverse(
-                'posts:add_comment', args=[PostsURLTests.post.id]
+                'posts:add_comment', args=(PostsURLTests.post.id,)
         )
         response = self.guest_client.get(address, follow=True)
         self.assertRedirects(response, redirect_address)
@@ -121,14 +111,14 @@ class PostsURLTests(TestCase):
         templates_url_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse(
-                'posts:group_posts', args=[
-                    PostsURLTests.group.slug]): 'posts/group_list.html',
+                'posts:group_posts', args=(
+                    PostsURLTests.group.slug,)): 'posts/group_list.html',
             reverse(
-                'posts:profile', args=[
-                    PostsURLTests.user.username]): 'posts/profile.html',
+                'posts:profile', args=(
+                    PostsURLTests.user.username,)): 'posts/profile.html',
             reverse(
-                'posts:post_detail', args=[
-                    PostsURLTests.post.id]): 'posts/post_detail.html'
+                'posts:post_detail', args=(
+                    PostsURLTests.post.id,)): 'posts/post_detail.html'
         }
 
         for address, template in templates_url_names.items():
@@ -140,8 +130,8 @@ class PostsURLTests(TestCase):
         """ Приватные URL-адреса используют соответствующий шаблон."""
         templates_url_names = {
             reverse(
-                'posts:post_edit', args=[
-                    PostsURLTests.post.id]): 'posts/create_post.html',
+                'posts:post_edit', args=(
+                    PostsURLTests.post.id,)): 'posts/create_post.html',
             reverse('posts:post_create'): 'posts/create_post.html'
         }
         for address, template in templates_url_names.items():

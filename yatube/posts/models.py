@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import UniqueConstraint
 
 User = get_user_model()
 
@@ -12,7 +13,8 @@ class Post(models.Model):
     )
     pub_date = models.DateTimeField(
         'Дата публикации',
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
     author = models.ForeignKey(
         User,
@@ -95,8 +97,8 @@ class Follow(models.Model):
     )
 
     def __str__(self):
-        return self.text[:settings.FIRST_SYMBOLS_NUMBER]
-
+        return f'{self.user} подписан на {self.author}'
+        
     class Meta:
-        unique_together = ('user', 'author')
+        UniqueConstraint(fields=['user', 'author'], name='unique_following')
         verbose_name = 'Подписки'
