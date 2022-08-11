@@ -159,7 +159,7 @@ class PostsPagesTests(TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertNotIn(test_post, response.context['page_obj'])
-    
+
     def test_сache(self):
         """Проверка работы кэширования на главной странице."""
         test_post = Post.objects.create(
@@ -176,28 +176,18 @@ class PostsPagesTests(TestCase):
         response_3 = self.guest_client.get(index_url)
         self.assertNotEqual(response_1.content, response_3.content)
 
-@classmethod   
+
+@classmethod
 class FollowTests(TestCase):
-   
+
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='following')
-       
+
     def setUp(self):
         FollowTests.authorized_client = Client()
         FollowTests.authorized_client.force_login(FollowTests.user)
         cache.clear()
 
-    # @classmethod
-    # def setUpTestData(cls):
-    #    cls.user = User.objects.create_user(username='post_author')
-    
-    # @classmethod
-    # def setUp(cls):
-    #    FollowTests.auth_following_user = Client()
-    #    FollowTests.auth_following_user.force_login(
-    #        FollowTests.auth_following_user)
-    #    cache.clear()
-            
     def test_follow(self):
         """Авторизованный пользователь может подписаться
         на других пользователей."""
@@ -292,7 +282,7 @@ class FollowTests(TestCase):
         response = author_user.get(
             reverse('posts:follow_index'))
         self.assertNotContains(response, test_post)
-  
+
 
 class PaginatorViewsTest(TestCase):
     @classmethod

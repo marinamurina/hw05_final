@@ -19,7 +19,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
-    
+
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='post_author')
@@ -189,7 +189,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(last_comment.text, comment_data.get('text'))
         self.assertEqual(last_comment.post.id, PostCreateFormTests.post.id)
         self.assertEqual(last_comment.author, PostCreateFormTests.user)
-    
+
     def test_add_comment(self):
         """Неавторизованный пользователь не может создать комментарий,
         происходит редирект на страницу авторизации."""

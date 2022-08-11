@@ -97,9 +97,11 @@ class PostsURLTests(TestCase):
             'posts:add_comment', args=(PostsURLTests.post.id,))
         response = self.authorized_client.get(address, Follow=True)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        redirect_address = reverse('posts:post_detail', args=(PostsURLTests.post.id,))
+        redirect_address = reverse(
+            'posts:post_detail', args=(PostsURLTests.post.id,)
+        )
         self.assertRedirects(response, redirect_address)
-            
+
     def test_add_comment_by_not_authorized_client(self):
         "Неавторизованный пользователь не может добавить комментарий."
         address = reverse('posts:add_comment', args=(PostsURLTests.post.id,))
