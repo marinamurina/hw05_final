@@ -83,14 +83,24 @@ class PostsURLTests(TestCase):
             ): reverse('posts:post_detail', args=(PostsURLTests.post.id,)),
             reverse(
                 'posts:post_create'): reverse(
-                    'users:login') + '?next=' + reverse('posts:post_create')
+                    'users:login') + '?next=' + reverse('posts:post_create'),
         }
         for address, redirect_address in templates_private_urls.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address, follow=True)
                 self.assertRedirects(response, redirect_address)
 
-    def test_comments(self):
+    def test_add_comment_by_authorized_client(self):
+        """Добавление комментария доступно авторизованному пользователю ."""
+        self.authorized_client.force_login(PostsURLTests.user)
+        address = reverse(
+            'posts:add_comment', args=(PostsURLTests.post.id,))
+        response = self.authorized_client.get(address, Follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        redirect_address = reverse('posts:post_detail', args=(PostsURLTests.post.id,))
+        self.assertRedirects(response, redirect_address)
+            
+    def test_add_comment_by_not_authorized_client(self):
         "Неавторизованный пользователь не может добавить комментарий."
         address = reverse('posts:add_comment', args=(PostsURLTests.post.id,))
         redirect_address = reverse(
@@ -138,3 +148,26 @@ class PostsURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
+    
+    def test_follow_index_url_correct_template(self):
+        """Адрес follow_index доступен авторизованному пользователю 
+        и используют соответствующий шаблон."""
+        self.authorized_client.force_login(PostsURLTests.user)
+        address = reverse(
+            'posts:follow_index')
+        response = self.authorized_client.get(address)
+        self.assertTemplateUsed(response, 'posts/follow.html')
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+    
+    def test_follow_url_redirect_guest(self):
+        """Адрес follow не доступен для неавторизованных пользователей,
+         ведет на редиректную страницу"""
+        address = reverse(
+            'posts:profile_follow', args=(
+                PostsURLTests.user.username,))
+        redirect_address = reverse(
+            'users:login') + '?next=' + reverse(
+                'posts:profile_follow', args=(
+                    PostsURLTests.user.username,))
+        response = self.guest_client.get(address, follow=True)
+        self.assertRedirects(response, redirect_address)

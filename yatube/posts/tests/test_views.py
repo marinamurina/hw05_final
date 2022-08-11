@@ -175,111 +175,121 @@ class PostsPagesTests(TestCase):
         cache.clear()
         response_3 = self.guest_client.get(index_url)
         self.assertNotEqual(response_1.content, response_3.content)
-   
-@classmethod
+
+@classmethod   
 class FollowTests(TestCase):
-
+   
     def setUpTestData(cls):
-        following_user = User.objects.create_user(
-            username='following')
+        cls.user = User.objects.create_user(username='following')
+       
+    def setUp(self):
+        FollowTests.authorized_client = Client()
+        FollowTests.authorized_client.force_login(FollowTests.user)
+        cache.clear()
 
-        FollowTests.auth_following_user = Client()
-        FollowTests.auth_following_user.force_login(
-            FollowTests.auth_following_user)
-
-        FollowTests.test_post = Post.objects.create(
-            author=following_user,
-            text=fake.text()
-        )
+    # @classmethod
+    # def setUpTestData(cls):
+    #    cls.user = User.objects.create_user(username='post_author')
     
+    # @classmethod
+    # def setUp(cls):
+    #    FollowTests.auth_following_user = Client()
+    #    FollowTests.auth_following_user.force_login(
+    #        FollowTests.auth_following_user)
+    #    cache.clear()
+            
     def test_follow(self):
         """Авторизованный пользователь может подписаться
         на других пользователей."""
-        test_user = User.objects.create_user(username='test_user')
+        author_user = User.objects.create_user(username='author_user')
         self.authorized_client = Client()
-        self.authorized_client.force_login(test_user)
+        self.authorized_client.force_login(author_user)
         test_count_1 = Follow.objects.filter(
-            user=test_user, author=FollowTests.following_user).count()
-        test_object = test_user.get(
+            user=FollowTests.user, author=author_user).count()
+        test_object = FollowTests.user.get(
             reverse(
                 'posts:profile_follow', args=(
-                    FollowTests.following_user.username,)))
+                    author_user.username,)))
         test_count_2 = Follow.objects.filter(
-            user=test_user, author=FollowTests.following_user).count()
+            user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1 + 1, test_count_2)
-        self.assertEqual(test_object.user, test_user)
-        self.assertEqual(test_object.author, PostsPagesTests.user)
+        self.assertEqual(test_object.user, PostsPagesTests.user)
+        self.assertEqual(test_object.author, author_user)
         
     def test_unfollow(self):
         """Авторизованный пользователь может 
         отписаться от других пользователей."""
-        test_user = User.objects.create_user(username='test_user')
+        author_user = User.objects.create_user(username='author_user')
         self.authorized_client = Client()
-        self.authorized_client.force_login(test_user)
+        self.authorized_client.force_login(author_user)
         test_count_1 = Follow.objects.filter(
-            user=test_user, author=FollowTests.following_user).count()
-        test_user.get(
+            user=FollowTests.user, author=author_user).count()
+        FollowTests.user.get(
             reverse(
                 'posts:profile_follow', args=(
-                    FollowTests.following_user.username,)))
+                    author_user.username,)))
         test_count_2 = Follow.objects.filter(
-            user=test_user, author=FollowTests.following_user).count()
+            user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1 + 1, test_count_2)
-        self.auth_follower_user.get(
+        FollowTests.user.get(
             reverse(
                 'posts:profile_unfollow', args=(
-                    FollowTests.following_user.username,)))
+                    author_user.username,)))
         test_count_3 = Follow.objects.filter(
-            user=test_user, author=FollowTests.following_user).count()
+            user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1, test_count_3)
    
     def test_subscription_feed(self):
         """Новая запись пользователя появляется
         только в ленте тех, кто на него подписан."""
+        author_user = User.objects.create_user(username='author_user')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(author_user)
+        test_post = Post.objects.create(
+            author=author_user,
+            text=fake.text()
+        )
         test_user = User.objects.create_user(username='test_user')
         self.authorized_client = Client()
         self.authorized_client.force_login(test_user)
-        test_user_2 = User.objects.create_user(username='test_user_2')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(test_user_2)
-        test_user.get(
+        FollowTests.user.get(
             reverse(
                 'posts:profile_follow', args=(
-                    FollowTests.following_user.username,)))
-        response = test_user.get(
+                    author_user.username,)))
+        response = FollowTests.user.get(
             reverse('posts:follow_index'))
         self.assertIn('page_obj', response.context)
         post_text = response.context['page_obj'][0]
-        self.assertEqual(post_text, FollowTests.test_post)
-        response = test_user_2.get(
+        self.assertEqual(post_text, test_post)
+        response = test_user.get(
             reverse('posts:follow_index'))
         self.assertNotContains(response,
-                               FollowTests.test_post)
+                               test_post)
 
     def test_follow_yourself(self):
         """Авторизованный пользователь не может 
         подписаться на самого себя."""
-        test_user = User.objects.create_user(username='test_user')
+        author_user = User.objects.create_user(username='author_user')
         self.authorized_client = Client()
-        self.authorized_client.force_login(test_user)
+        self.authorized_client.force_login(author_user)
         test_post = Post.objects.create(
-            author=test_user,
+            author=author_user,
             text=fake.text()
         )
         test_count_1 = Follow.objects.filter(
-            user=test_user, author=test_user).count() 
-        response = test_user.get(
+            user=author_user, author=author_user).count() 
+        response = author_user.get(
             reverse(
                 'posts:profile_follow', args=(
-                    test_user,)), follow=True)
+                    author_user,)), follow=True)
         redirect_address = reverse(
             'posts:profile', args=(
-                    test_user,))
+                    author_user,))
         self.assertRedirects(response, redirect_address)
         test_count_2 = Follow.objects.filter(
-            user=test_user, author=test_user).count() 
+            user=author_user, author=author_user).count() 
         self.assertEqual(test_count_1, test_count_2)
-        response = test_user.get(
+        response = author_user.get(
             reverse('posts:follow_index'))
         self.assertNotContains(response, test_post)
   
