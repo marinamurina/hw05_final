@@ -205,9 +205,9 @@ class FollowTests(TestCase):
         self.assertEqual(test_count_1 + 1, test_count_2)
         self.assertEqual(test_object.user, PostsPagesTests.user)
         self.assertEqual(test_object.author, author_user)
-        
+
     def test_unfollow(self):
-        """Авторизованный пользователь может 
+        """Авторизованный пользователь может
         отписаться от других пользователей."""
         author_user = User.objects.create_user(username='author_user')
         self.authorized_client = Client()
@@ -228,7 +228,7 @@ class FollowTests(TestCase):
         test_count_3 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1, test_count_3)
-   
+
     def test_subscription_feed(self):
         """Новая запись пользователя появляется
         только в ленте тех, кто на него подписан."""
@@ -257,7 +257,7 @@ class FollowTests(TestCase):
                                test_post)
 
     def test_follow_yourself(self):
-        """Авторизованный пользователь не может 
+        """Авторизованный пользователь не может
         подписаться на самого себя."""
         author_user = User.objects.create_user(username='author_user')
         self.authorized_client = Client()
@@ -267,17 +267,17 @@ class FollowTests(TestCase):
             text=fake.text()
         )
         test_count_1 = Follow.objects.filter(
-            user=author_user, author=author_user).count() 
+            user=author_user, author=author_user).count()
         response = author_user.get(
             reverse(
                 'posts:profile_follow', args=(
                     author_user,)), follow=True)
         redirect_address = reverse(
-            'posts:profile', args=(
-                    author_user,))
+            'posts:profile', args=(author_user,)
+        )
         self.assertRedirects(response, redirect_address)
         test_count_2 = Follow.objects.filter(
-            user=author_user, author=author_user).count() 
+            user=author_user, author=author_user).count()
         self.assertEqual(test_count_1, test_count_2)
         response = author_user.get(
             reverse('posts:follow_index'))
@@ -323,9 +323,9 @@ class PaginatorViewsTest(TestCase):
                     PaginatorViewsTest.user.username,))
         ]
         page_numbers = {
-                    1: first_page_posts,
-                    2: second_page_posts
-                }
+            1: first_page_posts,
+            2: second_page_posts
+        }
         for address in test_addresses:
             with self.subTest(address=address):
                 for page_number, page in page_numbers.items():

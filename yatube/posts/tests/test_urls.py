@@ -150,9 +150,9 @@ class PostsURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
-    
+
     def test_follow_index_url_correct_template(self):
-        """Адрес follow_index доступен авторизованному пользователю 
+        """Адрес follow_index доступен авторизованному пользователю
         и используют соответствующий шаблон."""
         self.authorized_client.force_login(PostsURLTests.user)
         address = reverse(
@@ -160,7 +160,7 @@ class PostsURLTests(TestCase):
         response = self.authorized_client.get(address)
         self.assertTemplateUsed(response, 'posts/follow.html')
         self.assertEqual(response.status_code, HTTPStatus.OK)
-    
+
     def test_follow_url_redirect_guest(self):
         """Адрес follow не доступен для неавторизованных пользователей,
          ведет на редиректную страницу"""
