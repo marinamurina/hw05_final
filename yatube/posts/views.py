@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Follow, Group, Post, User
+from .models import Follow, Group, Post, User
 from .utils import page_paginator
 
 
@@ -32,9 +32,9 @@ def profile(request, username):
     page_obj = page_paginator(user.posts.select_related(
         'author', 'group'), request)
     following = (
-        request.user.is_authenticated 
+        request.user.is_authenticated
         and Follow.objects.filter(
-        user=request.user, author=user).exists()
+            user=request.user, author=user).exists()
     )
     context = {
         'author': user,

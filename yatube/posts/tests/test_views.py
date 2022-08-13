@@ -183,7 +183,7 @@ class FollowTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='following')
-    
+
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -202,7 +202,7 @@ class FollowTests(TestCase):
         test_count_2 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1 + 1, test_count_2)
-        
+
     def test_unfollow(self):
         """Авторизованный пользователь может
         отписаться от других пользователей."""
@@ -230,7 +230,7 @@ class FollowTests(TestCase):
         response = self.authorized_client.get(
             reverse('posts:follow_index'))
         self.assertIn(test_post, response.context['page_obj'])
-        
+
     def test_not_subscription_feed(self):
         """Новая запись пользователя не появляется
         в ленте тех, кто на него не подписан."""
@@ -242,20 +242,22 @@ class FollowTests(TestCase):
         response = self.authorized_client.get(
             reverse('posts:follow_index'))
         self.assertNotIn(test_post, response.context['page_obj'])
-        
+
     def test_follow_yourself(self):
         """Авторизованный пользователь не может
         подписаться на самого себя."""
         author_user = User.objects.create_user(username='author_user')
         self.authorized_client.force_login(author_user)
-        test_count_1 = Follow.objects.filter(user=author_user, author=author_user).count()
+        test_count_1 = Follow.objects.filter(
+            user=author_user, author=author_user).count()
         self.authorized_client.get(
             reverse(
                 'posts:profile_follow', args=(
                     author_user.username,)))
-        test_count_2 = Follow.objects.filter(user=author_user, author=author_user).count()
+        test_count_2 = Follow.objects.filter(
+            user=author_user, author=author_user).count()
         self.assertEqual(test_count_1, test_count_2)
-        
+
 
 class PaginatorViewsTest(TestCase):
 
