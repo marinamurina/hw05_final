@@ -150,17 +150,23 @@ class PostCreateFormTests(TestCase):
         )
         self.authorized_client_2 = Client()
         self.authorized_client_2.force_login(self.user2)
+        test_post = Post.objects.create(
+            group=PostCreateFormTests.group,
+            author=PostCreateFormTests.user,
+            text=fake.text(),
+        )
         edit_data = {
             'text': fake.text(),
         }
         response = self.authorized_client_2.get(
             reverse(
                 'posts:post_edit', args=[
-                    self.post.id]), data=edit_data, follow=True
+                    test_post.id]), data=edit_data, follow=True
         )
-        redirect_address = reverse('posts:post_detail', args=(self.post.id,))
-        self.assertIsNot(self.post.text, edit_data['text'])
+        redirect_address = reverse('posts:post_detail', args=(test_post.id,))
         self.assertRedirects(response, redirect_address)
+        self.assertIsNot(test_post.text, edit_data['text'])
+
 
     def test_add_comment(self):
         """Добавление комментария авторизованным пользователем."""
