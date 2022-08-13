@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from faker import Faker
+
 from posts.models import Comment, Group, Post
 
 User = get_user_model()
@@ -94,7 +95,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(new_post.text, form_data['text'])
         self.assertEqual(new_post.author, PostCreateFormTests.user)
         self.assertEqual(new_post.group, PostCreateFormTests.group)
-        self.assertNotEqual(new_post.image, False)
+        self.assertTrue(new_post.image)
         self.assertEqual(new_post.image, 'posts/small_2.gif')
 
     def test_create_post_not_by_author(self):
@@ -111,11 +112,6 @@ class PostCreateFormTests(TestCase):
     def test_edit_post_by_author(self):
         """При редактировании поста автором происходит
         изменение в базе данных."""
-        group_2 = Group.objects.create(
-            title=fake.text(),
-            slug=fake.word(),
-            description=fake.text()
-        )
         test_post = Post.objects.create(
             group=PostCreateFormTests.group,
             author=PostCreateFormTests.user,
@@ -123,6 +119,11 @@ class PostCreateFormTests(TestCase):
             image=PostCreateFormTests.uploaded,
         )
         post_count = Post.objects.count()
+        group_2 = Group.objects.create(
+            title=fake.text(),
+            slug=fake.word(),
+            description=fake.text()
+        )
         edit_data = {
             'text': fake.text(),
             'group': group_2.id
@@ -149,23 +150,16 @@ class PostCreateFormTests(TestCase):
         )
         self.authorized_client_2 = Client()
         self.authorized_client_2.force_login(self.user2)
-
-        test_post = Post.objects.create(
-            group=PostCreateFormTests.group,
-            author=PostCreateFormTests.user,
-            text=fake.text(),
-            image=PostCreateFormTests.uploaded,
-        )
         edit_data = {
             'text': fake.text(),
         }
         response = self.authorized_client_2.get(
             reverse(
                 'posts:post_edit', args=[
-                    test_post.id]), data=edit_data, follow=True
+                    self.post.id]), data=edit_data, follow=True
         )
-        redirect_address = reverse('posts:post_detail', args=(test_post.id,))
-        self.assertIsNot(test_post.text, edit_data.get('text'))
+        redirect_address = reverse('posts:post_detail', args=(self.post.id,))
+        self.assertIsNot(self.post.text, edit_data['text'])
         self.assertRedirects(response, redirect_address)
 
     def test_add_comment(self):
@@ -186,8 +180,8 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(response, redirect_address)
         self.assertEqual(Comment.objects.count(), comments_count + 1)
         last_comment = response.context['comments'][0]
-        self.assertEqual(last_comment.text, comment_data.get('text'))
-        self.assertEqual(last_comment.post.id, PostCreateFormTests.post.id)
+        self.assertEqual(last_comment.text, comment_data['text'])
+        self.assertEqual(last_comment.post, PostCreateFormTests.post)
         self.assertEqual(last_comment.author, PostCreateFormTests.user)
 
     def test_add_comment(self):

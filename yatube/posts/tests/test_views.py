@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from faker import Faker
+
 from posts.forms import PostForm
 from posts.models import Follow, Group, Post
 
@@ -78,8 +79,8 @@ class PostsPagesTests(TestCase):
         response = self.guest_client.get(
             reverse('posts:profile', args=(
                 PostsPagesTests.user.username,)))
-        self.assertIn('author', response.context)
         self.assertIn('page_obj', response.context)
+        self.assertIn('author', response.context)
         test_objects = {
             response.context['page_obj'][0]: PostsPagesTests.post,
             response.context['author']: PostsPagesTests.user,
@@ -98,7 +99,7 @@ class PostsPagesTests(TestCase):
         self.assertIn('group', response.context)
         test_objects = {
             response.context['page_obj'][0]: PostsPagesTests.post,
-            response.context['group'].slug: PostsPagesTests.group.slug,
+            response.context['group']: PostsPagesTests.group,
             response.context['page_obj'][0].image: PostsPagesTests.post.image
         }
         for test_object, send_object in test_objects.items():
@@ -160,7 +161,7 @@ class PostsPagesTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertNotIn(test_post, response.context['page_obj'])
 
-    def test_сache(self):
+    def test_cache(self):
         """Проверка работы кэширования на главной странице."""
         test_post = Post.objects.create(
             group=PostsPagesTests.group,
@@ -177,114 +178,87 @@ class PostsPagesTests(TestCase):
         self.assertNotEqual(response_1.content, response_3.content)
 
 
-@classmethod
 class FollowTests(TestCase):
 
+    @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='following')
-
+    
     def setUp(self):
-        FollowTests.authorized_client = Client()
-        FollowTests.authorized_client.force_login(FollowTests.user)
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
         cache.clear()
 
     def test_follow(self):
         """Авторизованный пользователь может подписаться
         на других пользователей."""
         author_user = User.objects.create_user(username='author_user')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(author_user)
         test_count_1 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
-        test_object = FollowTests.user.get(
+        self.authorized_client.get(
             reverse(
                 'posts:profile_follow', args=(
                     author_user.username,)))
         test_count_2 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
         self.assertEqual(test_count_1 + 1, test_count_2)
-        self.assertEqual(test_object.user, PostsPagesTests.user)
-        self.assertEqual(test_object.author, author_user)
-
+        
     def test_unfollow(self):
         """Авторизованный пользователь может
         отписаться от других пользователей."""
         author_user = User.objects.create_user(username='author_user')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(author_user)
+        Follow.objects.create(user=FollowTests.user, author=author_user)
         test_count_1 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
-        FollowTests.user.get(
-            reverse(
-                'posts:profile_follow', args=(
-                    author_user.username,)))
-        test_count_2 = Follow.objects.filter(
-            user=FollowTests.user, author=author_user).count()
-        self.assertEqual(test_count_1 + 1, test_count_2)
-        FollowTests.user.get(
+        self.authorized_client.get(
             reverse(
                 'posts:profile_unfollow', args=(
                     author_user.username,)))
-        test_count_3 = Follow.objects.filter(
+        test_count_2 = Follow.objects.filter(
             user=FollowTests.user, author=author_user).count()
-        self.assertEqual(test_count_1, test_count_3)
+        self.assertEqual(test_count_1 - 1, test_count_2)
 
     def test_subscription_feed(self):
         """Новая запись пользователя появляется
-        только в ленте тех, кто на него подписан."""
+        в ленте тех, кто на него подписан."""
         author_user = User.objects.create_user(username='author_user')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(author_user)
         test_post = Post.objects.create(
             author=author_user,
             text=fake.text()
         )
-        test_user = User.objects.create_user(username='test_user')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(test_user)
-        FollowTests.user.get(
-            reverse(
-                'posts:profile_follow', args=(
-                    author_user.username,)))
-        response = FollowTests.user.get(
+        Follow.objects.create(user=FollowTests.user, author=author_user)
+        response = self.authorized_client.get(
             reverse('posts:follow_index'))
-        self.assertIn('page_obj', response.context)
-        post_text = response.context['page_obj'][0]
-        self.assertEqual(post_text, test_post)
-        response = test_user.get(
+        self.assertIn(test_post, response.context['page_obj'])
+        
+    def test_not_subscription_feed(self):
+        """Новая запись пользователя не появляется
+        в ленте тех, кто на него не подписан."""
+        author_user = User.objects.create_user(username='author_user')
+        test_post = Post.objects.create(
+            author=author_user,
+            text=fake.text()
+        )
+        response = self.authorized_client.get(
             reverse('posts:follow_index'))
-        self.assertNotContains(response,
-                               test_post)
-
+        self.assertNotIn(test_post, response.context['page_obj'])
+        
     def test_follow_yourself(self):
         """Авторизованный пользователь не может
         подписаться на самого себя."""
         author_user = User.objects.create_user(username='author_user')
-        self.authorized_client = Client()
         self.authorized_client.force_login(author_user)
-        test_post = Post.objects.create(
-            author=author_user,
-            text=fake.text()
-        )
-        test_count_1 = Follow.objects.filter(
-            user=author_user, author=author_user).count()
-        response = author_user.get(
+        test_count_1 = Follow.objects.filter(user=author_user, author=author_user).count()
+        self.authorized_client.get(
             reverse(
                 'posts:profile_follow', args=(
-                    author_user,)), follow=True)
-        redirect_address = reverse(
-            'posts:profile', args=(author_user,)
-        )
-        self.assertRedirects(response, redirect_address)
-        test_count_2 = Follow.objects.filter(
-            user=author_user, author=author_user).count()
+                    author_user.username,)))
+        test_count_2 = Follow.objects.filter(user=author_user, author=author_user).count()
         self.assertEqual(test_count_1, test_count_2)
-        response = author_user.get(
-            reverse('posts:follow_index'))
-        self.assertNotContains(response, test_post)
-
+        
 
 class PaginatorViewsTest(TestCase):
+
     @classmethod
     def setUpTestData(cls):
         test_post_number = random.randint(

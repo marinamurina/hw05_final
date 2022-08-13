@@ -31,8 +31,11 @@ def profile(request, username):
     user = get_object_or_404(User, username=username)
     page_obj = page_paginator(user.posts.select_related(
         'author', 'group'), request)
-    following = (request.user.is_authenticated and Follow.objects.filter(
-        user=request.user, author=user))
+    following = (
+        request.user.is_authenticated 
+        and Follow.objects.filter(
+        user=request.user, author=user).exists()
+    )
     context = {
         'author': user,
         'page_obj': page_obj,
@@ -44,7 +47,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     form = CommentForm()
-    comments = Comment.objects.select_related('post')
+    comments = post.comments.all()
     context = {
         'post': post,
         'form': form,

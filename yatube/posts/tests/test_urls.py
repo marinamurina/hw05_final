@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 from faker import Faker
+
 from posts.models import Group, Post
 
 User = get_user_model()
@@ -50,7 +51,6 @@ class PostsURLTests(TestCase):
 
     def test_private_urls_exists_at_desired_location(self):
         """Доступность приватных страниц автору."""
-        self.authorized_client.force_login(PostsURLTests.user)
         templates_private_urls = [
             reverse('posts:post_edit', args=(PostsURLTests.post.id,)),
             reverse('posts:post_create'),
@@ -63,8 +63,7 @@ class PostsURLTests(TestCase):
     def test_create_post_url_redirect_not_author(self):
         """Адрес редактирования поста для авторизованного пользователя,
         не являющегося автором, ведет на редиректную страницу."""
-        self.authorized_client.force_login(PostsURLTests.user2)
-        response = self.authorized_client.get(
+        response = self.authorized_client_2.get(
             reverse(
                 'posts:post_edit', args=(
                     PostsURLTests.post.id,)), follow=True
@@ -92,11 +91,10 @@ class PostsURLTests(TestCase):
 
     def test_add_comment_by_authorized_client(self):
         """Добавление комментария доступно авторизованному пользователю ."""
-        self.authorized_client.force_login(PostsURLTests.user)
         address = reverse(
             'posts:add_comment', args=(PostsURLTests.post.id,))
-        response = self.authorized_client.get(address, Follow=True)
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        response = self.authorized_client_2.get(address, follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         redirect_address = reverse(
             'posts:post_detail', args=(PostsURLTests.post.id,)
         )
@@ -154,7 +152,6 @@ class PostsURLTests(TestCase):
     def test_follow_index_url_correct_template(self):
         """Адрес follow_index доступен авторизованному пользователю
         и используют соответствующий шаблон."""
-        self.authorized_client.force_login(PostsURLTests.user)
         address = reverse(
             'posts:follow_index')
         response = self.authorized_client.get(address)
