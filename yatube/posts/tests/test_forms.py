@@ -167,7 +167,6 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(response, redirect_address)
         self.assertIsNot(test_post.text, edit_data['text'])
 
-
     def test_add_comment(self):
         """Добавление комментария авторизованным пользователем."""
         comments_count = Comment.objects.count()
