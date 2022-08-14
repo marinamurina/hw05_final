@@ -167,7 +167,7 @@ class PostCreateFormTests(TestCase):
         self.assertRedirects(response, redirect_address)
         self.assertIsNot(test_post.text, edit_data['text'])
 
-    def test_add_comment(self):
+    def test_add_comment_by_authorized_client(self):
         """Добавление комментария авторизованным пользователем."""
         comments_count = Comment.objects.count()
         comment_data = {
@@ -189,7 +189,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(last_comment.post, PostCreateFormTests.post)
         self.assertEqual(last_comment.author, PostCreateFormTests.user)
 
-    def test_add_comment(self):
+    def test_add_comment_by_not_authorized_client(self):
         """Неавторизованный пользователь не может создать комментарий,
         происходит редирект на страницу авторизации."""
         comments_count = Comment.objects.count()
