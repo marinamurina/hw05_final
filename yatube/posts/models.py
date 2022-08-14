@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import UniqueConstraint
 
 User = get_user_model()
 
@@ -100,6 +99,6 @@ class Follow(models.Model):
         return f'{self.user} подписан на {self.author}'
 
     class Meta:
-        constriants = [UniqueConstraint(
-            fields=['user', 'author'], name='unique_following')
+        constriants = [models.UniqueConstraint(
+            fields=['user', 'author'], name='unique_following'),
         ]
