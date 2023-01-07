@@ -1,3 +1,21 @@
-# hw05_final
+# yatube_project
+Социальная сеть блогеров
 
-[![CI](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
+### Описание.
+Благодаря этому проекту можно создавать посты, оставлять комментарии, подписываться на понравившихся авторов.
+
+### Технологии
+Python, Django.
+
+### Запуск проекта в dev-режиме
+- Установите и активируйте виртуальное окружение
+- Установите зависимости из файла requirements.txt
+```
+pip install -r requirements.txt
+``` 
+- В папке с файлом manage.py выполните команду:
+```
+python3 manage.py runserver
+```
+### Автор
+Мурина Марина.
