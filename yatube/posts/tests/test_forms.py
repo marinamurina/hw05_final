@@ -143,7 +143,7 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(test_post.group, group_2)
 
     def test_edit_post__not_by_author(self):
-        """При редактировании поста не-автором-поста происходит
+        """При попытке редактирования поста не-автором-поста происходит
         переадреcация на страницу поста."""
         PostCreateFormTests.user2 = User.objects.create_user(
             username='another_user'
